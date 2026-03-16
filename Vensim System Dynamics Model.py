@@ -97,6 +97,54 @@ def time_step():
 #######################################################################
 
 
+@component.add(name="a p", comp_type="Constant", comp_subtype="Normal")
+def a_p():
+    return 0.16
+
+
+@component.add(name="a v", comp_type="Constant", comp_subtype="Normal")
+def a_v():
+    return 0.1
+
+
+@component.add(name="b", comp_type="Constant", comp_subtype="Normal")
+def b():
+    return 0.09
+
+
+@component.add(
+    name="Growth",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"r": 1, "vegetation_biomass": 2, "s_half": 2, "soil_water": 4, "g0": 1},
+)
+def growth():
+    return r() * vegetation_biomass() * (1 - vegetation_biomass()) * (
+        soil_water() / (soil_water() + s_half())
+    ) + g0() * (soil_water() / (soil_water() + s_half()))
+
+
+@component.add(
+    name="NDVI sim raw",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={
+        "a_v": 1,
+        "vegetation_biomass": 1,
+        "a_p": 1,
+        "precipitation_norm": 1,
+        "b": 1,
+    },
+)
+def ndvi_sim_raw():
+    return a_v() * vegetation_biomass() + a_p() * precipitation_norm() + b()
+
+
+@component.add(name="S half", comp_type="Constant", comp_subtype="Normal")
+def s_half():
+    return 0.5
+
+
 @component.add(name="d0", comp_type="Constant", comp_subtype="Normal")
 def d0():
     return 0.08
@@ -111,7 +159,7 @@ def d1():
     name="Degradation",
     comp_type="Auxiliary",
     comp_subtype="Normal",
-    depends_on={"vegetation_biomass": 1, "d1": 1, "soil_water": 1, "d0": 1},
+    depends_on={"vegetation_biomass": 1, "d0": 1, "soil_water": 1, "d1": 1},
 )
 def degradation():
     return vegetation_biomass() * (d0() + d1() * (1 - soil_water()))
@@ -130,18 +178,6 @@ def evapotranspiration():
 @component.add(name="g0", comp_type="Constant", comp_subtype="Normal")
 def g0():
     return 0.01
-
-
-@component.add(
-    name="Growth",
-    comp_type="Auxiliary",
-    comp_subtype="Normal",
-    depends_on={"r": 1, "vegetation_biomass": 2, "soil_water": 4, "g0": 1},
-)
-def growth():
-    return r() * vegetation_biomass() * (1 - vegetation_biomass()) * (
-        soil_water() / (soil_water() + 0.5)
-    ) + g0() * (soil_water() / (soil_water() + 0.5))
 
 
 @component.add(name="infil c", comp_type="Constant", comp_subtype="Normal")
@@ -183,16 +219,6 @@ def r():
 )
 def percolation():
     return soil_water() * k_perc()
-
-
-@component.add(
-    name="NDVI sim raw",
-    comp_type="Auxiliary",
-    comp_subtype="Normal",
-    depends_on={"vegetation_biomass": 1, "precipitation_norm": 1},
-)
-def ndvi_sim_raw():
-    return 0.1 * vegetation_biomass() + 0.16 * precipitation_norm() + 0.09
 
 
 @component.add(
